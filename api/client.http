@@ -1,0 +1,29 @@
+### Create client
+POST http://localhost:8080/clients HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "Jane Doe",
+    "email": "jane@j.com"
+}
+
+### Create an account for client
+POST http://localhost:8080/accounts HTTP/1.1
+Content-Type: application/json
+
+{
+    "client_id": "a8098c1a-f86e-11da-bd1a-00112444be1e"
+}
+
+### Send a transactions from client a to client b
+POST http://localhost:8080/transactions HTTP/1.1
+Content-Type: application/json
+
+{
+    "account_id_from": "b8098c1a-f86e-11da-bd1a-00112444be1e",
+    "account_id_to": "b8098c1a-f86e-11da-bd1a-00112444be1f",
+    "amount": 100
+}
+
+### Verify client balance using accountId
+GET http://localhost:3003/balances/b8098c1a-f86e-11da-bd1a-00112444be1e HTTP/1.1
