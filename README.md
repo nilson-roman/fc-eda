@@ -10,4 +10,10 @@ To start the project, use the command:
 docker compose -d
 ```
 
+
+# Technology
+- Golang;
+- Java;
+- Docker;
+
 Note: The walletcore module was developed by: https://github.com/devfullcycle/fc-eda
