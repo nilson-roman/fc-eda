@@ -2,13 +2,17 @@ version: '3'
 
 services:
   goapp: 
-    build: .
+    build:
+      context: ./wallet-core
+      dockerfile: Dockerfile
     platform: linux/amd64
     volumes:
-      - .:/app
+      - ./wallet-core:/app
     ports:
       - 8080:8080
     command: go run cmd/walletcore/main.go
+    networks:
+      - fc-network
 
   mysql:
     image: mysql:5.7
@@ -21,6 +25,8 @@ services:
       - 3306:3306
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - fc-network
 
   zookeeper:
     image: "confluentinc/cp-zookeeper:6.1.0"
@@ -31,6 +37,8 @@ services:
       TZ: Sao_Paulo/Brazil
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - fc-network
 
   kafka:
     image: "confluentinc/cp-enterprise-kafka:6.1.0"
@@ -48,16 +56,15 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
       CONFLUENT_METRICS_ENABLE: 'false'
-
-      # Add topic creation configuration
-      KAFKA_CREATE_TOPICS: "balance:1:1,transactions:1:1"
+    networks:
+      - fc-network
 
   control-center:
     image: confluentinc/cp-enterprise-control-center:7.3.0
@@ -74,4 +81,28 @@ services:
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
       PORT: 9021
-  
+    networks:
+      - fc-network
+
+  javaapp: 
+    build:
+      context: ./fcbalance
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    ports:
+      - 3003:3003
+    depends_on:
+        - mysql
+        - kafka
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/wallet
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP-SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_GROUP-ID: balance-consumer-group
+    networks:
+      - fc-network
+
+networks:
+  fc-network:
+    driver: bridge
